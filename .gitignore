@@ -1,0 +1,8 @@
+# This repository is inside a Tribes 1.11 folder.
+# Only the mod, the tests and the documents are in the repository.
+/*
+!/lakrabbit/
+!/laktest/
+!/README.md
+!/.gitignore
+*.pid
