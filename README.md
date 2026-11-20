@@ -11,7 +11,8 @@ Server-side port of the Tribes 2 LakRabbit game mode (v3.40). Clients need nothi
 - The rabbit is invulnerable for 2 s after a grab and drops the flag only on death.
 - Some mid-air disc hits slap the target far away.
 - Hunters get one free disc jump per life.
-- LT loadout. Spawns are near the rabbit or the flag.
+- Loadout: LT with plasma instead of the chaingun. Spawns are near the rabbit or the flag.
+- Chaingun bullets (map pickups) heal whoever they hit.
 - Votes: Duel Mode, No-Splash, Pro Mode. Ends at 2000 points or the time limit.
 
 ## Install
@@ -41,6 +42,5 @@ Only Deathmatch maps are used; each gets one neutral flag.
 - No shocklance in T1.
 - Rabbit hit of 75+ points: 5 s of invulnerability instead of the missile attack.
 - Hit of 100+ points: a center-screen message instead of fireworks.
-- Chaingun does damage but gives no points (T1 scripts cannot count shots).
 - No flag icon; the flag home has a waypoint. Stats are on the Objectives screen.
 - No flag capture on CTF maps.

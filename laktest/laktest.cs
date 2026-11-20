@@ -195,6 +195,17 @@ function LakTest::step4()
    LakTest::check("ground_disc_no_points", $LakPC[$A, morepoints] == %m0, "got=" @ $LakPC[$A, morepoints] - %m0);
    GameBase::setDamageLevel($pB, 0);
 
+   // Chaingun bullets heal the player they hit (the rabbit, and between hunters).
+   %heal = 0.11 * $DamageScale[larmor, $BulletDamageType];
+   GameBase::setDamageLevel($pB, 0.3);
+   LakTest::hit($pB, $BulletDamageType, 0.11, $A);
+   LakTest::check("chaingun_heals_rabbit", LakTest::near(GameBase::getDamageLevel($pB), 0.3 - %heal, 0.001), "dmg=" @ GameBase::getDamageLevel($pB) @ " expect=" @ 0.3 - %heal);
+   GameBase::setDamageLevel($pC, 0.3);
+   LakTest::hit($pC, $BulletDamageType, 0.11, $A);
+   LakTest::check("chaingun_heals_hunter", LakTest::near(GameBase::getDamageLevel($pC), 0.3 - %heal, 0.001), "dmg=" @ GameBase::getDamageLevel($pC));
+   GameBase::setDamageLevel($pC, 0);
+   GameBase::setDamageLevel($pB, 0);
+
    LakTest::hit($pB, $BlasterDamageType, 0.125, $A);
    %d = GameBase::getDamageLevel($pB);
    %expect = 0.125 * 0.5 * $DamageScale[larmor, $BlasterDamageType];
@@ -405,6 +416,8 @@ function LakTest::step13()
    Player::setItemCount($D, PlasmaGun, 1);
    Player::setItemCount($D, PlasmaAmmo, 30);
    Player::setItemCount($D, Blaster, 1);
+   Player::setItemCount($D, Chaingun, 1);   // Not in the loadout. Map pickups only.
+   Player::setItemCount($D, BulletAmmo, 100);
    $LakTest::Home[$pD] = GameBase::getPosition($pD);
    LakRabbit::checkReturn($LakFlag, $LakFlag.pickupSequence);
    Flag::onCollision($LakFlag, $pE);
@@ -438,6 +451,8 @@ function LakTest::stepAim()
    %s = $LakShot[$LakTest::Shot];
    Player::useItem($pD, getWord(%s, 0));
    GameBase::setDamageLevel($pE, 0);
+   if(getWord(%s, 0) == "Chaingun")
+      GameBase::setDamageLevel($pE, 0.3);   // Chaingun bullets heal. Start with damage.
    GameBase::setEnergy($pD, 100);
    LakTest::placeShooters();
    LakTest::next("Fire", 0.6);  // Wait for the weapon to become ready.
@@ -472,8 +487,10 @@ function LakTest::stepCheck()
    %detail = "lastHit=[" @ %h @ "] (type value pct dist ma nade) points=" @ %pts @ " mounted=" @ $LakTest::MountedAtFire @ " ammo " @ $LakTest::Ammo0 @ "->" @ Player::getItemCount($D, getWord(%s, 1)) @ " dmgE=" @ GameBase::getDamageLevel($pE);
    if(%w == "Chaingun")
    {
-      // At 25 m, chaingun bullets spread. A hit is possible but not sure. The chaingun never gives points.
+      // At 25 m, chaingun bullets spread. A hit is possible but not sure.
+      // The chaingun never gives points and never adds damage.
       LakTest::check("fire_Chaingun_no_points", %pts == 0, %detail);
+      LakTest::check("fire_Chaingun_no_damage", GameBase::getDamageLevel($pE) <= 0.3, "dmgE=" @ GameBase::getDamageLevel($pE) @ " (start 0.3)");
    }
    else
    {

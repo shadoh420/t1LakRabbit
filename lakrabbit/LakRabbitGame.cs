@@ -33,11 +33,12 @@ $LakSnd::Drop    = "~wflagflap.wav";
 $LakSnd::Return  = "~wflagreturn.wav";
 $LakSnd::Warn    = "~wLeftMissionArea.wav";
 
-// LT loadout. Source: LT.cs in base\missions\LT.vol.
+// LT loadout (source: LT.cs in base\missions\LT.vol), with plasma
+// instead of the chaingun. Chaingun bullets heal in LakRabbit.
 $spawnBuyList[0] = LightArmor;
 $spawnBuyList[1] = EnergyPack;
 $spawnBuyList[2] = GrenadeLauncher;
-$spawnBuyList[3] = Chaingun;
+$spawnBuyList[3] = PlasmaGun;
 $spawnBuyList[4] = Disclauncher;
 $spawnBuyList[5] = Grenade;
 $spawnBuyList[6] = RepairKit;
@@ -1056,6 +1057,17 @@ function LakRabbit::onHit(%pl, %cl, %scl, %type, %value, %pos)
    if(%scl <= 0 || %scl == "")
       return %value;  // Damage from the world (fall, out of bounds).
 
+   // LakRabbit change: chaingun bullets heal the player they hit, by the
+   // damage that they would cause. This applies to all players.
+   if(%type == $BulletDamageType)
+   {
+      %dl = GameBase::getDamageLevel(%pl) - %value * $DamageScale[Player::getArmor(%pl), $BulletDamageType];
+      if(%dl < 0)
+         %dl = 0;
+      GameBase::setDamageLevel(%pl, %dl);
+      return 0;
+   }
+
    // Damage occurs only between the rabbit and a hunter.
    // In T2, the hunters are one team and team damage is off.
    %tRabbit = (%pl.carryFlag != "");
@@ -1315,9 +1327,6 @@ function LakRabbit::onHit(%pl, %cl, %scl, %type, %value, %pos)
          %sound = $LakSnd::Bonus;
       }
    }
-   // Chaingun ($BulletDamageType) causes damage but gives no points.
-   // The T2 accuracy award (each 5 hits) needs the number of shots.
-   // T1 scripts cannot get that number.
 
    if(%points > 0)
       LakRabbit::award(%scl, %shooter, %points, %velBonus, %vel, %distance, %ma, %long, %weapon, %special, %accuracy);
