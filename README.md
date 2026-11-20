@@ -1,126 +1,46 @@
 # LakRabbit for Tribes 1.11
 
-This is a server-side port of the Tribes 2 LakRabbit game mode (LakRabbitGame.cs v3.40) to Tribes 1.11.
-Players do not need to install anything. Only the server needs the mod.
+Server-side port of the Tribes 2 LakRabbit game mode (v3.40). Clients need nothing.
 
 ## Rules
 
-- One flag is on the map. The player with the flag is the rabbit. All other players are hunters.
-- Damage occurs only between the rabbit and a hunter. Hunters cannot damage other hunters.
-- Score = flag grabs + kills + bonus points + (time with the flag / 3 s).
-- Bonus points come from mid-air hits and long-distance hits. Distance and speed increase the points.
-- The rabbit cannot get damage for 2 s after a flag grab.
-- When the rabbit dies, the flag flies out. After 25 s on the ground, the flag goes back to its start position.
-- A mid-air disc hit can slap the target. A slap pushes the target far away. If the target is the rabbit, the rabbit drops the flag.
-- Each hunter gets one free disc jump after each spawn.
-- Players spawn with the LT loadout, near the rabbit or near the flag.
-- Votes: Duel Mode, No-Splash Damage, Pro Mode.
-- The game ends at 2000 points or at the time limit.
+- One flag. Whoever holds it is the rabbit; everyone else hunts the rabbit.
+- Damage only happens between the rabbit and hunters.
+- Score: flag grabs + kills + bonus points + 1 point per 3 s holding the flag.
+- Bonus points for mid-air and long-distance hits, scaled by distance and speed.
+- The rabbit is invulnerable for 2 s after a grab and drops the flag only on death.
+- Some mid-air disc hits slap the target far away.
+- Hunters get one free disc jump per life.
+- LT loadout. Spawns are near the rabbit or the flag.
+- Votes: Duel Mode, No-Splash, Pro Mode. Ends at 2000 points or the time limit.
 
 ## Install
 
-1. Copy the `lakrabbit` folder into the Tribes 1.11 folder (the folder that has `Tribes.exe`).
-2. Start the dedicated server:
+Copy `lakrabbit` into the Tribes folder, then:
 
-   ```
-   Tribes.exe -mod lakrabbit -dedicated Peekaboo
-   ```
+```
+Tribes.exe -mod lakrabbit -dedicated Peekaboo
+```
 
-The mod uses only the Deathmatch maps. It puts one neutral flag on each map.
-If the server tries to load a map that is not a Deathmatch map, the mod loads Peekaboo.
+Only Deathmatch maps are used; each gets one neutral flag.
 
 ## Settings
-
-Set these values in a server script before the mission starts (for example `config\autoexec.cs`):
 
 | Setting | Default | Function |
 |---|---|---|
 | `$LakRabbit::DuelMode` | 0 | The rabbit must kill hunters in a time limit. |
 | `$LakRabbit::NoSplashDamage` | 0 | Splash damage does not hurt hunters. |
 | `$LakRabbit::PubPro` | 0 | Pro loadout (disc, blaster, plasma). Kills give 5 points. |
-| `$LakRabbit::UnlimitedDJ` | 0 | Hunters get an unlimited number of free disc jumps. |
+| `$LakRabbit::UnlimitedDJ` | 0 | Unlimited free disc jumps for hunters. |
+| `$LakRabbit::SlapDropsFlag` | 0 | A slap makes the rabbit drop the flag (T2 behavior). |
 | `$LakRabbit::ShowFlagTask` | 0 | Hunters get a waypoint to the rabbit. |
-| `$LakRabbit::Debug` | 0 | Write each scored hit to the console. |
-
-### Admin
-
-Set an admin password in `config\autoexec.cs`. The stock 1.11 server does not accept an admin login if this value is blank.
-
-```
-$AdminPassword = "your-password";
-```
-
-To log in, type this in the client console:
-
-```
-sad("your-password");
-```
-
-An admin gets the LakRabbit mode items ("Admin: ...") in the Options menu.
-Do not put the password in a file that you share.
-
-### Private test server
-
-For a test server that must not show on a master server, add these lines to `config\autoexec.cs`.
-The engine writes `ServerPrefs.cs` again when it stops, and it removes blank values. Thus you must not put these values only in `ServerPrefs.cs`.
-
-```
-$Server::HostPublicGame = false;
-$Server::numMasters = 0;
-$Server::Master1 = "";
-for(%i = 0; %i < 8; %i++)
-{
-   $Server::MasterAddressN[%i] = "";
-   $Server::XLMasterN[%i] = "";
-}
-// A server that stops writes its port into ServerPrefs.cs. Thus set the port here too.
-if($LakTest::Enabled)
-   $Server::Port = 28002;
-else
-   $Server::Port = 28001;
-```
-
-## Tests
-
-The `laktest` folder has tests that operate in the real engine. The tests spawn bots on a hidden dedicated server.
-They call the game functions directly and fire real weapons. Then they compare the results with the T2 rules.
-
-1. Copy the `lakrabbit` and `laktest` folders into the Tribes 1.11 folder.
-2. Run:
-
-   ```
-   powershell -NoProfile -ExecutionPolicy Bypass -File laktest\run_tests.ps1
-   ```
-
-The test server uses port 28002 if `config\autoexec.cs` sets the port as in the private server example. Thus it can run at the same time as a play server on port 28001.
-The script shows one `LAKTEST PASS` or `LAKTEST FAIL` line for each check. The exit code is 0 only if all checks pass.
-The tests do not examine the item purchase of human players, the vote menus or network play.
+| `$LakRabbit::Debug` | 0 | Log each scored hit to the console. |
 
 ## Differences from Tribes 2
 
-T1 does not have all the T2 functions. These are the replacements:
-
-| T2 | T1 replacement |
-|---|---|
-| Distance and speed from the projectile start point | A history of each player (10 samples each second). The mod finds the sample that agrees with the flight time. |
-| Ground raycast (mid-air test, height) | `GameBase::getLOSInfo` with a pitch of 90 degrees down. |
-| Direct-hit percent | T1 disc and plasma explode at the surface of the target. The mod uses the measured damage of a direct hit as 100%. |
-| Hand grenade and grenade launcher have different damage types | They have the same type in T1. The mod records hand grenade explosions to find the weapon. |
-| Shocklance | T1 does not have this weapon. |
-| Missile attack on all players (rabbit hit of 75 points or more) | The rabbit cannot get damage for 5 s. |
-| Fireworks (hit of 100 points or more) | A message in the center of the screen. |
-| Flag icon, sensor groups | Not available. Use the waypoint setting. |
-| Debrief table | The Objectives (O) screen. |
-| Chaingun accuracy points | The chaingun causes damage but gives no points. T1 scripts cannot count shots. |
-| Flag capture on CTF maps | Not included. |
-
-## Notes for script authors
-
-The tests found these 1.11 engine behaviors:
-
-- AI client ids do not keep script fields. `Client::getFirst/getNext` do not include AI clients.
-- `buyItem` stops the server when it is used for an AI client.
-- Projectiles from AI players give damage source 0 to `Player::onDamage`.
-- `Vector::getRotation` also sets a pitch. For a player, set the yaw only (forward is +y).
-
-The mod contains copies of stock Tribes 1.11 script functions with changes. T1 has no `parent::`.
+- No shocklance in T1.
+- Rabbit hit of 75+ points: 5 s of invulnerability instead of the missile attack.
+- Hit of 100+ points: a center-screen message instead of fireworks.
+- Chaingun does damage but gives no points (T1 scripts cannot count shots).
+- No flag icon; the flag home has a waypoint. Stats are on the Objectives screen.
+- No flag capture on CTF maps.

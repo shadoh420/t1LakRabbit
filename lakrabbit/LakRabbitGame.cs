@@ -14,6 +14,7 @@ if($LakRabbit::DuelMode == "")       $LakRabbit::DuelMode = 0;
 if($LakRabbit::NoSplashDamage == "") $LakRabbit::NoSplashDamage = 0;
 if($LakRabbit::PubPro == "")         $LakRabbit::PubPro = 0;
 if($LakRabbit::UnlimitedDJ == "")    $LakRabbit::UnlimitedDJ = 0;
+if($LakRabbit::SlapDropsFlag == "")  $LakRabbit::SlapDropsFlag = 0; // T2 is on. Default: drop only on death.
 if($LakRabbit::ShowFlagTask == "")   $LakRabbit::ShowFlagTask = 0; // T2 default is off.
 if($LakRabbit::Debug == "")          $LakRabbit::Debug = 0;
 $LakRabbit::ScoreLimit     = 2000;
@@ -1188,7 +1189,8 @@ function LakRabbit::onHit(%pl, %cl, %scl, %type, %value, %pos)
             if(%chance <= 0) %chance = 1;
             if(lakRoll(%chance))
             {
-               if(%tRabbit)
+               // T2 drops the flag on a slap. Here the default is off.
+               if(%tRabbit && $LakRabbit::SlapDropsFlag)
                {
                   LakRabbit::dropFlag(%pl);
                   %pl.freeDJ = 1;

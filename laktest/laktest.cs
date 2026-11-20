@@ -215,14 +215,21 @@ function LakTest::step5()
    LakTest::next(6, 0.5);
 }
 
-// Slap: the rabbit drops the flag, knockback, no fall damage, no grab for
-// 2.5 s, flag return.
+// Slap: knockback, flag kept by default, flag drop if SlapDropsFlag is on,
+// no fall damage, no grab for 2.5 s, flag return.
 function LakTest::step6()
 {
    LakTest::refs();
    $LakTest::Roll = 0;   // Make the slap occur.
+   // Default ($LakRabbit::SlapDropsFlag = 0): the rabbit keeps the flag.
    LakTest::lift($pB, 30);
    LakTest::hit($pB, $ExplosionDamageType, 0.5, $A);
+   LakTest::check("slap_default_keeps_flag", $LakRabbitCl == $B && $pB.carryFlag == $LakFlag && $pB.knockback == 1, "rabbit=" @ $LakRabbitCl @ " knock=" @ $pB.knockback);
+   // Setting on (T2 behavior): the slap makes the rabbit drop the flag.
+   $LakRabbit::SlapDropsFlag = 1;
+   LakTest::lift($pB, 30);
+   LakTest::hit($pB, $ExplosionDamageType, 0.5, $A);
+   $LakRabbit::SlapDropsFlag = 0;
    $LakTest::Roll = "";
    LakTest::check("slap_drops_flag", $LakRabbitCl == "" && $pB.carryFlag == "" && $LakFlag.carrier == -1, "rabbit=" @ $LakRabbitCl @ " carrier=" @ $LakFlag.carrier);
    LakTest::check("slap_flag_item_removed", Player::getItemCount($pB, Flag) == 0, "count=" @ Player::getItemCount($pB, Flag));

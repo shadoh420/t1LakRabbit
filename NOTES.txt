@@ -1,0 +1,22 @@
+LakRabbit for Tribes 1.11 - notes for script authors
+
+HOW THE PORT WORKS AROUND T1
+- T1 has no parent::. The mod contains changed copies of stock functions.
+- Shot distance and speed: T1 does not give the projectile start point.
+  The mod keeps a position history of each player (10 samples each second).
+- Mid-air test and height: GameBase::getLOSInfo with a pitch of 90 degrees down.
+- Direct hit: T1 disc and plasma explode at the surface of the target.
+  The mod uses the measured damage of a direct hit as 100%.
+- Hand grenade and grenade launcher have the same damage type in T1.
+  The mod records hand grenade explosions to find the weapon.
+
+ENGINE BEHAVIOR (TRIBES 1.11)
+- AI client ids do not keep script fields. Client::getFirst/getNext skip AI clients.
+- buyItem stops the server when it is used for an AI client.
+- Projectiles from AI players give damage source 0 to Player::onDamage.
+- Vector::getRotation also sets a pitch. For a player, set the yaw only (forward is +y).
+- The server writes ServerPrefs.cs when it stops, and it removes blank values.
+
+TESTS
+Copy lakrabbit and laktest into the Tribes folder, then run:
+  powershell -NoProfile -ExecutionPolicy Bypass -File laktest\run_tests.ps1

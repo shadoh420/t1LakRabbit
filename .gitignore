@@ -4,5 +4,6 @@
 !/lakrabbit/
 !/laktest/
 !/README.md
+!/NOTES.txt
 !/.gitignore
 *.pid
