@@ -108,6 +108,7 @@ function LakTest::step1()
 {
    LakTest::refs();
    // deleteVariables in Mission::init must not remove the rule tables or the sounds.
+   LakTest::check("sensor_network_on", $SensorNetworkEnabled == 1, "value=[" @ $SensorNetworkEnabled @ "]");
    LakTest::check("tables_survive_init", $LakSplashType[$ShrapnelDamageType] == 1 && $LakBase[$ShrapnelDamageType] > 0 && $LakSnd::Bonus != "", "splash=[" @ $LakSplashType[$ShrapnelDamageType] @ "] snd=[" @ $LakSnd::Bonus @ "]");
    LakTest::check("bots_alive", lakAlive($pA) && lakAlive($pB) && lakAlive($pC), $pA @ " " @ $pB @ " " @ $pC);
    Game::playerSpawned($pA, $A, "larmor");
@@ -236,7 +237,9 @@ function LakTest::step6()
    Flag::onCollision($LakFlag, $pB);
    LakTest::check("regrab_denied_2_5s", $LakFlag.carrier == -1, "carrier=" @ $LakFlag.carrier);
 
+   %wp0 = $LakRabbit::FlagWaypointCount;
    LakRabbit::checkReturn($LakFlag, $LakFlag.pickupSequence);
+   LakTest::check("flag_return_waypoint", $LakRabbit::FlagWaypointCount == %wp0 + 1, "count " @ %wp0 @ " -> " @ $LakRabbit::FlagWaypointCount);
    LakTest::check("flag_return_home", $LakFlag.atHome && Vector::getDistance(GameBase::getPosition($LakFlag), $LakFlag.originalPosition) < 1, "pos=" @ GameBase::getPosition($LakFlag));
 
    Game::refreshClientScore($B);
@@ -422,7 +425,7 @@ function LakTest::stepAim()
    LakTest::refs2();
    if($LakTest::Shot >= $LakShotCount)
    {
-      LakTest::next("Done", 0.5);
+      LakTest::next("AIFight", 0.5);
       return;
    }
    %s = $LakShot[$LakTest::Shot];
@@ -475,6 +478,38 @@ function LakTest::stepCheck()
    }
    $LakTest::Shot++;
    LakTest::next("Aim", 0.3);
+}
+
+//--- engine AI combat (as Spoonbot): does the engine give the bot client as the source? ---
+// The engine AI attacks only enemies. Thus E goes to team 1 for this step.
+// The step reports the result. It does not fail if the bot does not fire.
+function LakTest::stepAIFight()
+{
+   LakTest::refs2();
+   GameBase::setTeam($E, 1);
+   GameBase::setTeam($pE, 1);
+   GameBase::setDamageLevel($pE, 0);
+   $LakRabbit::LastRawSrc[$E] = "none";
+   %p = $LakTest::Home[$pD];
+   GameBase::setPosition($pD, %p);
+   GameBase::setPosition($pE, getWord(%p,0) + 20 @ " " @ getWord(%p,1) @ " " @ getWord(%p,2) + 2);
+   Item::setVelocity($pD, "0 0 0");
+   Item::setVelocity($pE, "0 0 0");
+   Player::useItem($pD, DiscLauncher);
+   // Spoonbot combat settings (BotGear.cs AI::setWeapons, spoonbot.cs IQ)
+   AI::SetVar("LakD", iq, 240);
+   AI::SetVar("LakD", triggerPct, 1000);
+   AI::SetVar("LakD", attackMode, 1);
+   AI::setAutomaticTargets("LakD");
+   LakTest::next("AIFightCheck", 8);
+}
+
+function LakTest::stepAIFightCheck()
+{
+   LakTest::refs2();
+   %src = $LakRabbit::LastRawSrc[$E];
+   echo("LAKTEST INFO ai_fight source=[" @ %src @ "] botClient=" @ $D @ " dmgE=" @ GameBase::getDamageLevel($pE) @ " ammo=" @ Player::getItemCount($D, DiscAmmo) @ " lastHit=[" @ $LakRabbit::LastHit @ "]");
+   LakTest::next("Done", 0.5);
 }
 
 function LakTest::stepDone()

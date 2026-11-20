@@ -263,7 +263,9 @@ function Mission::init()
 {
    setTeamScoreHeading("");
    setClientScoreHeading("Player Name\t\x60Score\t\x8CTime\t\xB0Kills\t\xD8MAs\t\xEEPing\t\xFFPL");
-   $SensorNetworkEnabled = 0;
+   // Keep the sensor network on. The minimap uses it. The stock dm.cs turns it
+   // off for free-for-all, but T2 LakRabbit makes all players always visible.
+   $SensorNetworkEnabled = 1;
    $numTeams = getNumTeams();
    for(%i = 0; %i < $numTeams; %i++)
       $teamScore[%i] = 0;
@@ -622,6 +624,11 @@ function Game::playerSpawned(%pl, %clientId, %armor)
    %pl.freeDJ = 1;
    %pl.knockback = 0;
    %pl.lakInvUntil = 0;
+   // Show the flag home position (also at the start of the mission).
+   if($LakRabbit::Debug)
+      echo("LakRabbit spawn: client " @ %clientId @ " flagAtHome=" @ $LakFlag.atHome @ " carrier=" @ $LakFlag.carrier @ " matchStarted=" @ $matchStarted @ " sensorNet=" @ $SensorNetworkEnabled);
+   if($LakFlag.atHome && $LakFlag.carrier == -1)
+      LakRabbit::showFlagWaypoint(%clientId, "");
 }
 
 //--- flag ---------------------------------------------------------------
@@ -658,6 +665,7 @@ function Flag::onCollision(%this, %object)
    %this.pickupSequence++;
    %object.carryFlag = %this;
    %object.freeDJ = 0;
+   LakRabbit::hideFlagWaypoint();
    $LakRabbitCl = %cl;
    $LakRabbit::RabbitDamageTime = 0;
    $LakPC[%cl, startTime] = getSimTime();
@@ -752,6 +760,7 @@ function LakRabbit::checkReturn(%flag, %seq)
    GameBase::setPosition(%flag, %flag.originalPosition);
    Item::setVelocity(%flag, "0 0 0");
    %flag.atHome = 1;
+   LakRabbit::showFlagWaypointAll();
    LakRabbit::updateObjectives();
 }
 
@@ -955,6 +964,40 @@ function LakRabbit::hideRabbitWaypoint()
       {
          setCommandStatus(%cl, 0, "");
          $LakPC[%cl, waypoint] = "";
+      }
+}
+
+//--- flag home waypoint (T2 "Flag Home" waypoint) ------------------------------
+// Show a waypoint to the flag home position. %sound is "" or a sound tag.
+// Bots do not get waypoints.
+function LakRabbit::showFlagWaypoint(%cl, %sound)
+{
+   if(Player::isAIControlled(Client::getOwnedObject(%cl)))
+      return;
+   %p = $LakFlag.originalPosition;
+   issueCommand(%cl, %cl, 0, "The flag is at home." @ %sound, getWord(%p, 0), getWord(%p, 1));
+   if($LakRabbit::Debug)
+      echo("LakRabbit waypoint: flag home to client " @ %cl @ " at " @ getWord(%p, 0) @ " " @ getWord(%p, 1) @ " matchStarted=" @ $matchStarted @ " sensorNet=" @ $SensorNetworkEnabled @ " team=" @ Client::getTeam(%cl));
+   $LakPC[%cl, flagWaypoint] = 1;
+}
+
+// Show the waypoint to all players. The flag went back to its home position.
+function LakRabbit::showFlagWaypointAll()
+{
+   for(%lw = 0; (%cl = getWord(lakClientList(), %lw)) != -1; %lw++)
+      if(lakAlive(Client::getOwnedObject(%cl)))
+         LakRabbit::showFlagWaypoint(%cl, "~wcapobj");
+   $LakRabbit::FlagWaypointCount++;
+}
+
+// Remove the waypoint from all players. A player took the flag.
+function LakRabbit::hideFlagWaypoint()
+{
+   for(%lw = 0; (%cl = getWord(lakClientList(), %lw)) != -1; %lw++)
+      if($LakPC[%cl, flagWaypoint])
+      {
+         setCommandStatus(%cl, 0, "");
+         $LakPC[%cl, flagWaypoint] = "";
       }
 }
 
@@ -1338,6 +1381,7 @@ function Player::onDamage(%this,%type,%value,%pos,%vec,%mom,%vertPos,%quadrant,%
 			return;
 		if (%this.knockback && (%type == $LandingDamageType || %type == $ImpactDamageType))
 			return;
+		$LakRabbit::LastRawSrc[%damagedClient] = %object;  // Damage source from the engine, for the tests.
 		if($LakRabbit::Debug)
 			echo("LakRabbit raw damage: target " @ %this @ " type " @ %type @ " value " @ %value @ " object [" @ %object @ "] objtype [" @ getObjectType(%object) @ "] targetClient " @ %damagedClient);
 		if(%type == $ImpactDamageType && %object.clLastMount != "")

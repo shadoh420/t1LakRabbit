@@ -42,6 +42,23 @@ Set these values in a server script before the mission starts (for example `conf
 | `$LakRabbit::ShowFlagTask` | 0 | Hunters get a waypoint to the rabbit. |
 | `$LakRabbit::Debug` | 0 | Write each scored hit to the console. |
 
+### Admin
+
+Set an admin password in `config\autoexec.cs`. The stock 1.11 server does not accept an admin login if this value is blank.
+
+```
+$AdminPassword = "your-password";
+```
+
+To log in, type this in the client console:
+
+```
+sad("your-password");
+```
+
+An admin gets the LakRabbit mode items ("Admin: ...") in the Options menu.
+Do not put the password in a file that you share.
+
 ### Private test server
 
 For a test server that must not show on a master server, add these lines to `config\autoexec.cs`.
@@ -56,6 +73,11 @@ for(%i = 0; %i < 8; %i++)
    $Server::MasterAddressN[%i] = "";
    $Server::XLMasterN[%i] = "";
 }
+// A server that stops writes its port into ServerPrefs.cs. Thus set the port here too.
+if($LakTest::Enabled)
+   $Server::Port = 28002;
+else
+   $Server::Port = 28001;
 ```
 
 ## Tests
@@ -70,6 +92,7 @@ They call the game functions directly and fire real weapons. Then they compare t
    powershell -NoProfile -ExecutionPolicy Bypass -File laktest\run_tests.ps1
    ```
 
+The test server uses port 28002 if `config\autoexec.cs` sets the port as in the private server example. Thus it can run at the same time as a play server on port 28001.
 The script shows one `LAKTEST PASS` or `LAKTEST FAIL` line for each check. The exit code is 0 only if all checks pass.
 The tests do not examine the item purchase of human players, the vote menus or network play.
 
